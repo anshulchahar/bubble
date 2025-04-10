@@ -1,16 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
+import { useTheme } from '../context/ThemeContext'; // Import useTheme
 
-/**
- * TaskBubble component for rendering individual task bubbles
- * 
- * @param {Object} task - The task object to render
- * @param {Function} onPress - Function to call when bubble is pressed
- * @param {Function} onLongPress - Function to call when bubble is long pressed
- */
-const TaskBubble = ({ task, onPress, onLongPress }) => {
-  // Calculate bubble size based on priority and importance
+const TaskBubble = ({ task, onPress, onLongPress, style }) => {
+  const { colors } = useTheme(); // Use theme colors
+
+  // Calculate bubble size based on priority and importance (keep consistent)
   const getBubbleRadius = (priority, importance) => {
     const base = 30; // min size
     const maxAdd = 50; // max extra size
@@ -18,70 +14,81 @@ const TaskBubble = ({ task, onPress, onLongPress }) => {
     return base + (total / 10) * maxAdd;
   };
 
-  // Get bubble color based on status
-  const getBubbleColor = (status) => {
+  // Get bubble gradient colors based on status
+  const getBubbleGradient = (status) => {
     switch (status) {
       case 'todo':
-        return '#4361ee'; // primary blue
+        // Extract colors from CSS gradient string
+        return ['#FF9A8B', '#FF6A88'];
       case 'in-progress':
-        return '#f8961e'; // warning orange
+        return ['#FFD54F', '#FFBF3A'];
       case 'done':
-        return '#4cc9f0'; // success blue
+        return ['#81FBB8', '#28C76F'];
       default:
-        return '#6c757d'; // gray
+        return [colors.bubbleDefault, colors.bubbleDefault]; // Use solid color for default
     }
   };
 
   const radius = getBubbleRadius(task.priority, task.importance);
-  const color = getBubbleColor(task.status);
+  const gradientColors = getBubbleGradient(task.status);
+  const isDefaultColor = task.status !== 'todo' && task.status !== 'in-progress' && task.status !== 'done';
+
+  // Dynamic styles
+  const dynamicStyles = getStyles(radius, colors);
 
   return (
     <TouchableOpacity
       onPress={() => onPress(task)}
       onLongPress={() => onLongPress(task)}
-      style={[
-        styles.container,
-        {
-          width: radius * 2,
-          height: radius * 2,
-        }
-      ]}
+      style={[dynamicStyles.container, style]} // Combine base styles with position styles
       activeOpacity={0.8}
     >
-      <Svg height="100%" width="100%">
-        <Circle
-          cx={radius}
-          cy={radius}
-          r={radius}
-          fill={color}
-        />
-      </Svg>
-      <View style={styles.labelContainer}>
-        <Text style={styles.label} numberOfLines={2}>
-          {task.title}
-        </Text>
-      </View>
+      <LinearGradient
+        colors={gradientColors}
+        style={dynamicStyles.gradient}
+        start={{ x: 0, y: 0 }} // Define gradient direction
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={dynamicStyles.labelContainer}>
+          <Text style={dynamicStyles.label} numberOfLines={Math.floor(radius / 10)}> {/* Adjust lines based on size */}
+            {task.title}
+          </Text>
+        </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
+// Function to generate styles
+const getStyles = (radius, colors) => StyleSheet.create({
   container: {
-    position: 'absolute',
+    width: radius * 2,
+    height: radius * 2,
+    borderRadius: radius, // Make it a circle
+    overflow: 'hidden', // Clip gradient to circle
+    // Add a subtle shadow/border for better definition
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    backgroundColor: colors.card, // Background for shadow to show
+  },
+  gradient: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   labelContainer: {
-    position: 'absolute',
+    padding: 5, // Consistent padding
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 4,
   },
   label: {
-    color: '#ffffff',
+    color: colors.bubbleText, // Use theme text color for bubbles
     fontWeight: 'bold',
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: Math.max(10, Math.min(14, radius * 0.3)), // Scale font size with bubble size
   },
 });
 

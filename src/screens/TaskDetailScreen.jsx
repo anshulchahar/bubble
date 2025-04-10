@@ -1,238 +1,249 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 import useTaskStore from '../lib/store';
+import { useTheme } from '../context/ThemeContext'; // Import useTheme
+import { Ionicons } from '@expo/vector-icons'; // For icons
 
-/**
- * TaskDetailScreen component for viewing and managing task details
- */
 const TaskDetailScreen = ({ route, navigation }) => {
   const { taskId } = route.params;
   const { tasks, updateTask, deleteTask, setTaskStatus } = useTaskStore();
-  
+  const { colors } = useTheme(); // Use theme colors
+
   // Find the task by ID
   const task = tasks.find(t => t.id === taskId);
-  
+
+  // Dynamic styles based on theme
+  const styles = getStyles(colors);
+
   // Handle if task not found
   if (!task) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Task not found</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.centeredContent}>
+            <Text style={styles.errorText}>Task not found</Text>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.actionButtonText}>Go Back</Text>
+            </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
-  
+
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(undefined, { // Use device locale
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   };
-  
-  // Get status color
-  const getStatusColor = (status) => {
+
+  // Get status display info (color and text)
+  const getStatusInfo = (status) => {
     switch (status) {
       case 'todo':
-        return '#4361ee';
+        return { color: colors.bubbleTodo.split(' ')[2], text: 'To Do' }; // Extract end color from gradient
       case 'in-progress':
-        return '#f8961e';
+        return { color: colors.bubbleInProgress.split(' ')[2], text: 'In Progress' };
       case 'done':
-        return '#4cc9f0';
+        return { color: colors.bubbleDone.split(' ')[2], text: 'Done' };
       default:
-        return '#6c757d';
+        return { color: colors.bubbleDefault, text: 'Unknown' };
     }
   };
-  
+
+  const statusInfo = getStatusInfo(task.status);
+
   // Handle status change
   const handleStatusChange = (newStatus) => {
     setTaskStatus(task.id, newStatus);
   };
-  
+
   // Handle delete task
   const handleDelete = () => {
     deleteTask(task.id);
     navigation.goBack();
   };
-  
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.content}>
-        <Text style={styles.title}>{task.title}</Text>
-        
-        <View 
-          style={[
-            styles.statusBadge, 
-            { backgroundColor: `${getStatusColor(task.status)}20` }
-          ]}
-        >
-          <Text style={[styles.statusText, { color: getStatusColor(task.status) }]}>
-            {task.status === 'todo' ? 'To Do' : 
-             task.status === 'in-progress' ? 'In Progress' : 'Done'}
-          </Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        {/* Header with Back Button */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
         </View>
-        
-        <View style={styles.metaContainer}>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Priority</Text>
-            <Text style={styles.metaValue}>{task.priority}/5</Text>
-          </View>
-          
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Importance</Text>
-            <Text style={styles.metaValue}>{task.importance}/5</Text>
-          </View>
-        </View>
-        
-        <View style={styles.metaContainer}>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Due Date</Text>
-            <Text style={styles.metaValue}>{formatDate(task.dueDate)}</Text>
-          </View>
-          
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Category</Text>
-            <Text style={styles.metaValue}>{task.category || 'None'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionLabel}>Description</Text>
-          <Text style={styles.description}>
-            {task.description || 'No description provided.'}
-          </Text>
-        </View>
-        
-        <View style={styles.statusActions}>
-          <TouchableOpacity 
+
+        {/* Main Content Card */}
+        <View style={styles.contentCard}>
+          {/* Title */}
+          <Text style={styles.title}>{task.title}</Text>
+
+          {/* Status Badge */}
+          <View
             style={[
-              styles.statusButton,
-              task.status === 'todo' && styles.statusButtonActive,
-              { borderColor: '#4361ee' }
+              styles.statusBadge,
+              // Use a semi-transparent version of the status color
+              { backgroundColor: `${statusInfo.color}33` } // Add alpha transparency
             ]}
-            onPress={() => handleStatusChange('todo')}
           >
-            <Text 
-              style={[
-                styles.statusButtonText,
-                task.status === 'todo' && styles.statusButtonTextActive,
-                { color: task.status === 'todo' ? '#fff' : '#4361ee' }
-              ]}
-            >
-              To Do
+            <Text style={[styles.statusText, { color: statusInfo.color }]}>
+              {statusInfo.text}
             </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.statusButton,
-              task.status === 'in-progress' && styles.statusButtonActive,
-              { borderColor: '#f8961e' }
-            ]}
-            onPress={() => handleStatusChange('in-progress')}
-          >
-            <Text 
-              style={[
-                styles.statusButtonText,
-                task.status === 'in-progress' && styles.statusButtonTextActive,
-                { color: task.status === 'in-progress' ? '#fff' : '#f8961e' }
-              ]}
+          </View>
+
+          {/* Meta Info Grid */}
+          <View style={styles.metaGrid}>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Priority</Text>
+              <Text style={styles.metaValue}>{task.priority}/5</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Importance</Text>
+              <Text style={styles.metaValue}>{task.importance}/5</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Due Date</Text>
+              <Text style={styles.metaValue}>{formatDate(task.dueDate)}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Category</Text>
+              <Text style={styles.metaValue}>{task.category || 'None'}</Text>
+            </View>
+          </View>
+
+          {/* Description */}
+          {task.description && (
+            <View style={styles.descriptionContainer}>
+              <Text style={styles.sectionLabel}>Description</Text>
+              <Text style={styles.description}>{task.description}</Text>
+            </View>
+          )}
+
+          {/* Status Change Buttons */}
+          <View style={styles.sectionContainer}>
+             <Text style={styles.sectionLabel}>Change Status</Text>
+             <View style={styles.statusActions}>
+                {[ 'todo', 'in-progress', 'done' ].map((statusValue) => {
+                  const currentStatusInfo = getStatusInfo(statusValue);
+                  const isActive = task.status === statusValue;
+                  return (
+                    <TouchableOpacity
+                      key={statusValue}
+                      style={[
+                        styles.statusButton,
+                        { borderColor: currentStatusInfo.color },
+                        isActive && { backgroundColor: currentStatusInfo.color }
+                      ]}
+                      onPress={() => handleStatusChange(statusValue)}
+                    >
+                      <Text
+                        style={[
+                          styles.statusButtonText,
+                          { color: isActive ? colors.bubbleText : currentStatusInfo.color }
+                        ]}
+                      >
+                        {currentStatusInfo.text}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('TaskForm', { taskId: task.id })}
             >
-              In Progress
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.statusButton,
-              task.status === 'done' && styles.statusButtonActive,
-              { borderColor: '#4cc9f0' }
-            ]}
-            onPress={() => handleStatusChange('done')}
-          >
-            <Text 
-              style={[
-                styles.statusButtonText,
-                task.status === 'done' && styles.statusButtonTextActive,
-                { color: task.status === 'done' ? '#fff' : '#4cc9f0' }
-              ]}
+              <Ionicons name="create-outline" size={20} color={colors.bubbleText} style={styles.buttonIcon} />
+              <Text style={styles.actionButtonText}>Edit Task</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={handleDelete}
             >
-              Done
-            </Text>
-          </TouchableOpacity>
+              <Ionicons name="trash-outline" size={20} color={colors.bubbleTodo.split(' ')[2]} style={styles.buttonIcon} />
+              <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete Task</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        <View style={styles.actions}>
-          <TouchableOpacity 
-            style={styles.editButton}
-            onPress={() => navigation.navigate('TaskForm', { taskId: task.id })}
-          >
-            <Text style={styles.editButtonText}>Edit Task</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.deleteButton}
-            onPress={handleDelete}
-          >
-            <Text style={styles.deleteButtonText}>Delete Task</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+// Function to generate styles based on theme colors
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f7fb',
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  centeredContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
   header: {
-    padding: 16,
-    paddingTop: 48,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingTop: 16, // Reduce top padding inside safe area
+    paddingBottom: 8,
+    backgroundColor: colors.background, // Match background
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 0,
   },
   backButtonText: {
-    color: '#4361ee',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '500',
+    marginLeft: 6,
   },
-  content: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
+  contentCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
     margin: 16,
-    padding: 16,
-    elevation: 2,
+    marginTop: 8,
+    padding: 20,
+    // Consistent shadow
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 12,
   },
   statusBadge: {
@@ -240,96 +251,102 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   statusText: {
-    fontWeight: '500',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
-  metaContainer: {
+  metaGrid: {
     flexDirection: 'row',
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    marginBottom: 10, // Reduced margin
   },
   metaItem: {
-    flex: 1,
+    width: '50%', // Two items per row
+    marginBottom: 16,
   },
   metaLabel: {
     fontSize: 14,
-    color: '#6c757d',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   metaValue: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: colors.text,
   },
-  descriptionContainer: {
+  sectionContainer: {
+    marginTop: 16,
     marginBottom: 24,
   },
-  descriptionLabel: {
+   descriptionContainer: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
+    fontWeight: '600', // Bolder section label
+    color: colors.text,
+    marginBottom: 10,
   },
   description: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#333',
+    color: colors.textSecondary, // Slightly lighter description text
   },
   statusActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
   },
   statusButton: {
     flex: 1,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderRadius: 4,
+    borderWidth: 1.5, // Slightly thicker border
+    borderRadius: 8, // More rounded
     alignItems: 'center',
     marginHorizontal: 4,
   },
-  statusButtonActive: {
-    backgroundColor: '#4361ee',
-  },
+  // statusButtonActive is handled inline now
   statusButtonText: {
-    fontWeight: '500',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
-  statusButtonTextActive: {
-    color: '#ffffff',
-  },
+  // statusButtonTextActive is handled inline now
   actions: {
-    marginTop: 8,
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 20,
   },
-  editButton: {
-    backgroundColor: '#4361ee',
-    paddingVertical: 12,
-    borderRadius: 4,
+  actionButton: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    paddingVertical: 14, // Larger buttons
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
   },
-  editButtonText: {
-    color: '#ffffff',
+  actionButtonText: {
+    color: colors.bubbleText,
     fontSize: 16,
     fontWeight: 'bold',
   },
+  buttonIcon: {
+    marginRight: 8,
+  },
   deleteButton: {
-    borderWidth: 1,
-    borderColor: '#f72585',
-    paddingVertical: 12,
-    borderRadius: 4,
-    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.bubbleTodo.split(' ')[2], // Use theme red color
   },
   deleteButtonText: {
-    color: '#f72585',
-    fontSize: 16,
-    fontWeight: '500',
+    color: colors.bubbleTodo.split(' ')[2],
   },
   errorText: {
     fontSize: 18,
-    color: '#f72585',
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: 24,
     marginBottom: 16,
   },
 });

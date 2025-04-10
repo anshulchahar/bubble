@@ -10,9 +10,9 @@ const lightColors = {
   border: '#E9ECEF',      // Light Gray Border
   primary: '#4A90E2',     // A modern blue for accents if needed later
   // Bubble Colors (Distinct and vibrant)
-  bubbleTodo: 'linear-gradient(135deg, #FF9A8B 0%, #FF6A88 100%)', // Pink/Red gradient
-  bubbleInProgress: 'linear-gradient(135deg, #FFD54F 0%, #FFBF3A 100%)', // Yellow/Orange gradient
-  bubbleDone: 'linear-gradient(135deg, #81FBB8 0%, #28C76F 100%)', // Green gradient
+  bubbleTodo: '#FF6A88', // Pink/Red (replaced gradient)
+  bubbleInProgress: '#FFBF3A', // Yellow/Orange (replaced gradient) 
+  bubbleDone: '#28C76F', // Green (replaced gradient)
   bubbleDefault: '#ADB5BD', // Grey for others
   bubbleText: '#FFFFFF',
 };
@@ -24,26 +24,29 @@ const darkColors = {
   textSecondary: '#A0A0A0', // Medium Light Gray
   border: '#333333',      // Dark Border
   primary: '#4A90E2',     // Same blue accent
-  // Bubble Colors (Might need slight adjustments for dark bg, but let's start same)
-  bubbleTodo: 'linear-gradient(135deg, #FF9A8B 0%, #FF6A88 100%)',
-  bubbleInProgress: 'linear-gradient(135deg, #FFD54F 0%, #FFBF3A 100%)',
-  bubbleDone: 'linear-gradient(135deg, #81FBB8 0%, #28C76F 100%)',
+  // Bubble Colors (Solid colors instead of gradients)
+  bubbleTodo: '#FF6A88',
+  bubbleInProgress: '#FFBF3A', 
+  bubbleDone: '#28C76F',
   bubbleDefault: '#6C757D',
   bubbleText: '#FFFFFF',
 };
 
 export const ThemeContext = createContext({
-  isDark: false,
-  colors: lightColors,
+  isDark: true, // Changed default to true
+  colors: darkColors, // Changed default to darkColors
   setScheme: () => {},
 });
 
 export const ThemeProvider = ({ children }) => {
-  const colorScheme = useColorScheme(); // 'light' or 'dark' or null
-  const [isDark, setIsDark] = useState(colorScheme === 'dark');
+  // Force dark mode as default regardless of system setting
+  const colorScheme = useColorScheme(); // Still get system preference
+  const [isDark, setIsDark] = useState(true); // Default to true for dark mode
 
+  // Only respect system changes if user hasn't explicitly set a preference
   useEffect(() => {
-    setIsDark(colorScheme === 'dark');
+    // No longer automatically follow system preference
+    // We keep this hook in case we want to add a "system" option later
   }, [colorScheme]);
 
   const defaultTheme = {

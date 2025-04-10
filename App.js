@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { ThemeProvider } from './src/context/ThemeContext'; // Import ThemeProvider
+import { ThemeProvider, useTheme } from './src/context/ThemeContext'; // Import ThemeProvider
 import HomeScreen from './src/screens/HomeScreen';
 import TaskFormScreen from './src/screens/TaskFormScreen';
 import TaskDetailScreen from './src/screens/TaskDetailScreen';
@@ -11,7 +11,7 @@ const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <ThemeProvider> // Wrap with ThemeProvider
+    <ThemeProvider>
       {/* We can get theme info here if needed for StatusBar */}
       <ThemedApp />
     </ThemeProvider>
@@ -20,11 +20,12 @@ export default function App() {
 
 // Separate component to access theme context easily
 function ThemedApp() {
-  // const { isDark } = useTheme(); // Example: access theme state
+  const { isDark } = useTheme(); // Access theme state
 
   return (
     <NavigationContainer>
-      <StatusBar style="auto" /> {/* Use auto style for StatusBar */}
+      <StatusBar style="light" /> 
+      {/* Always use light style for StatusBar since we're using dark mode by default */}
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{

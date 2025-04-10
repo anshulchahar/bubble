@@ -5,7 +5,8 @@ import useTaskStore from '../lib/store';
 import { useTheme } from '../context/ThemeContext'; // Import useTheme
 
 const TaskFormScreen = ({ route, navigation }) => {
-  const { taskId } = route.params || {};
+  // Safely extract taskId from route.params, ensuring it doesn't error if params is undefined
+  const taskId = route.params?.taskId;
   const { tasks, addTask, updateTask } = useTaskStore();
   const { colors } = useTheme(); // Use theme colors
 

@@ -36,10 +36,23 @@ const TaskBubble = ({ task, onPress, onLongPress, style }) => {
   // Dynamic styles
   const dynamicStyles = getStyles(radius, colors);
 
+  // Create safe handler functions that check if the callbacks exist
+  const handlePress = () => {
+    if (onPress && typeof onPress === 'function') {
+      onPress(task);
+    }
+  };
+  
+  const handleLongPress = () => {
+    if (onLongPress && typeof onLongPress === 'function') {
+      onLongPress(task);
+    }
+  };
+
   return (
     <TouchableOpacity
-      onPress={() => onPress(task)}
-      onLongPress={() => onLongPress(task)}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
       style={[dynamicStyles.container, style]} // Combine base styles with position styles
       activeOpacity={0.8}
     >

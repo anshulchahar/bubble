@@ -70,10 +70,16 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
 
   // Track tasks for debugging
   useEffect(() => {
-    setDebugInfo(prev => ({ ...prev, taskCount: tasks.length }));
+    // Filter out tasks without IDs to prevent warnings
+    const validTasks = tasks.filter(task => !!task.id);
+    if (validTasks.length !== tasks.length) {
+      console.warn(`Filtered out ${tasks.length - validTasks.length} tasks without IDs`);
+    }
+    
+    setDebugInfo(prev => ({ ...prev, taskCount: validTasks.length }));
     
     // Force a recentering when tasks change significantly
-    if (tasks.length !== prevTasksRef.current.length) {
+    if (validTasks.length !== prevTasksRef.current.length) {
       setTimeout(recenterCanvas, 500);
     }
   }, [tasks]);
@@ -81,7 +87,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
   // Start the physics simulation loop for bubble interactions
   const startPhysicsSimulation = () => {
     const runPhysics = () => {
-      if (physicsEnabledRef.current && tasks.length > 1) {
+      if (physicsEnabledRef.current && tasks.filter(task => !!task.id).length > 1) {
         applyPhysics();
       }
       
@@ -94,22 +100,25 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
 
   // Apply physics-based forces to bubbles to prevent overlap
   const applyPhysics = () => {
+    // Filter out tasks without IDs
+    const validTasks = tasks.filter(task => !!task.id);
+    
     // Skip physics if there are no bubbles or only one bubble
-    if (tasks.length <= 1 || Object.keys(bubblePositions).length <= 1) return;
+    if (validTasks.length <= 1 || Object.keys(bubblePositions).length <= 1) return;
     
     // Only apply physics if bubbles are actually overlapping
     let hasOverlap = false;
     
     // Check for any overlap first 
-    for (let i = 0; i < tasks.length; i++) {
-      const taskA = tasks[i];
+    for (let i = 0; i < validTasks.length; i++) {
+      const taskA = validTasks[i];
       const posA = bubblePositions[taskA.id];
       if (!posA) continue;
       
       const radiusA = getBubbleRadius(taskA.priority, taskA.importance);
       
-      for (let j = i + 1; j < tasks.length; j++) {
-        const taskB = tasks[j];
+      for (let j = i + 1; j < validTasks.length; j++) {
+        const taskB = validTasks[j];
         const posB = bubblePositions[taskB.id];
         if (!posB) continue;
         
@@ -139,18 +148,18 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
       const newPositions = { ...prev };
       
       // For each pair of bubbles, calculate repulsion force
-      for (let i = 0; i < tasks.length; i++) {
-        const taskA = tasks[i];
+      for (let i = 0; i < validTasks.length; i++) {
+        const taskA = validTasks[i];
         if (!newPositions[taskA.id]) continue;
         
         const radiusA = getBubbleRadius(taskA.priority, taskA.importance);
         let forceX = 0;
         let forceY = 0;
         
-        for (let j = 0; j < tasks.length; j++) {
+        for (let j = 0; j < validTasks.length; j++) {
           if (i === j) continue;  // Skip self
           
-          const taskB = tasks[j];
+          const taskB = validTasks[j];
           if (!newPositions[taskB.id]) continue;
           
           const radiusB = getBubbleRadius(taskB.priority, taskB.importance);
@@ -214,13 +223,13 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
   }, [canvasOffset]);
 
   // Find initial positions for bubbles with better spread
-  const findInitialBubblePosition = (task, newPositions, canvasWidth, canvasHeight, tasks) => {
+  const findInitialBubblePosition = (task, newPositions, canvasWidth, canvasHeight, validTasks) => {
     const radius = getBubbleRadius(task.priority, task.importance);
     const centerX = canvasWidth / 2;
     const centerY = canvasHeight / 2;
     
     // Start with deterministic position based on task index
-    const idx = tasks.findIndex(t => t.id === task.id);
+    const idx = validTasks.findIndex(t => t.id === task.id);
     
     // Increase variety in initial positions with different factors based on task ID
     const uniqueFactor = parseInt(task.id.slice(-4), 10) % 10 || 1;
@@ -246,7 +255,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
       Object.entries(newPositions).forEach(([id, pos]) => {
         if (id === task.id) return; // Skip self
         
-        const otherTask = tasks.find(t => t.id === id);
+        const otherTask = validTasks.find(t => t.id === id);
         if (!otherTask) return;
         
         const otherRadius = getBubbleRadius(otherTask.priority, otherTask.importance);
@@ -283,7 +292,10 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
 
   // Initialize bubble positions when tasks change
   useEffect(() => {
-    if (tasks.length > 0) {
+    // Filter out tasks without IDs
+    const validTasks = tasks.filter(task => !!task.id);
+    
+    if (validTasks.length > 0) {
       // Only proceed if we have valid canvas dimensions
       const canvasWidth = canvasDimensions.width || width - 32;
       const canvasHeight = canvasDimensions.height || height * 0.6;
@@ -299,22 +311,17 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         const newPositions = { ...prevPositions };
         
         // Add positions for new tasks
-        tasks.forEach(task => {
-          if (!task.id) {
-            console.warn('Task missing ID:', task);
-            return;
-          }
-          
+        validTasks.forEach(task => {
           if (!newPositions[task.id]) {
             // Find initial position that minimizes overlap
             newPositions[task.id] = findInitialBubblePosition(
-              task, newPositions, canvasWidth, canvasHeight, tasks
+              task, newPositions, canvasWidth, canvasHeight, validTasks
             );
           }
         });
         
         // Store current tasks for future reference
-        prevTasksRef.current = [...tasks];
+        prevTasksRef.current = [...validTasks];
         
         return newPositions;
       });
@@ -323,13 +330,16 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
 
   // Helper function to find which bubble was touched
   const findTouchedBubble = (x, y) => {
+    // Filter out tasks without IDs
+    const validTasks = tasks.filter(task => !!task.id);
+    
     // Adjust coordinates for canvas offset and scaling
     const adjustedX = (x - canvasOffset.x) / canvasScale;
     const adjustedY = (y - canvasOffset.y) / canvasScale;
     
     // Iterate backwards so top bubbles are checked first
-    for (let i = tasks.length - 1; i >= 0; i--) {
-      const task = tasks[i];
+    for (let i = validTasks.length - 1; i >= 0; i--) {
+      const task = validTasks[i];
       const bubblePos = bubblePositions[task.id];
       if (!bubblePos) continue;
 
@@ -356,7 +366,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
     // Calculate the bounding box of all bubbles
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     
-    tasks.forEach(task => {
+    tasks.filter(task => !!task.id).forEach(task => {
       const pos = bubblePositions[task.id];
       if (!pos) return;
       
@@ -570,12 +580,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         {...panResponder.panHandlers}
         onLayout={measureCanvas}
       >
-        {tasks.map((task, index) => {
-          if (!task.id) {
-            console.warn('Task missing ID in render', index);
-            return null;
-          }
-          
+        {tasks.filter(task => !!task.id).map((task) => {
           const position = bubblePositions[task.id];
           if (!position) return null;
 

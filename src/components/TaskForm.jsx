@@ -41,8 +41,9 @@ const TaskForm = ({ task, onSave, onCancel }) => {
   // Handle save button press
   const handleSave = () => {
     if (validateForm()) {
+      const now = new Date().toISOString();
       onSave({
-        id: task?.id, // Will be undefined for new tasks
+        id: task?.id || Date.now().toString(), // Generate ID for new tasks
         title: title.trim(),
         description: description.trim(),
         priority,
@@ -50,6 +51,9 @@ const TaskForm = ({ task, onSave, onCancel }) => {
         status,
         dueDate: date ? date.toISOString() : null, // Save date as ISO string or null
         category: category.trim(),
+        // Add creation timestamp for new tasks
+        createdAt: task?.createdAt || now,
+        updatedAt: now,
       });
     }
   };

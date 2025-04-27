@@ -8,7 +8,7 @@ const lightColors = {
   text: '#212529',       // Dark Gray
   textSecondary: '#6C757D', // Medium Gray
   border: '#E9ECEF',      // Light Gray Border
-  primary: '#4A90E2',     // A modern blue for accents if needed later
+  primary: '#f92c06',     // Updated to orange-red theme color
   // Bubble Colors (Distinct and vibrant)
   bubbleTodo: '#FF6A88', // Pink/Red (replaced gradient)
   bubbleInProgress: '#FFBF3A', // Yellow/Orange (replaced gradient) 
@@ -23,7 +23,7 @@ const darkColors = {
   text: '#E0E0E0',       // Light Gray
   textSecondary: '#A0A0A0', // Medium Light Gray
   border: '#333333',      // Dark Border
-  primary: '#4A90E2',     // Same blue accent
+  primary: '#f92c06',     // Updated to orange-red theme color
   // Bubble Colors (Solid colors instead of gradients)
   bubbleTodo: '#FF6A88',
   bubbleInProgress: '#FFBF3A', 

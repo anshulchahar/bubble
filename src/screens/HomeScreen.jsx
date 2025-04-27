@@ -137,6 +137,7 @@ const getStyles = (colors) => StyleSheet.create({
   header: {
     backgroundColor: colors.card,
     padding: 14,
+    paddingLeft: 0, // Remove left padding completely
     paddingTop: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -145,8 +146,9 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    height: 30,
+    height: 35,
     width: 120,
+    marginLeft: -25, // Add negative margin to pull logo closer to edge
   },
   themeToggle: {
     padding: 6,

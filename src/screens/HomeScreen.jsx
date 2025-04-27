@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
 import BubbleCanvas from '../components/BubbleCanvas';
 import useTaskStore from '../lib/store';
 import { useTheme } from '../context/ThemeContext';
@@ -60,7 +60,7 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Bubble Tasks</Text>
+        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         {/* Replace toggle switch with just an icon */}
         <TouchableOpacity 
           style={styles.themeToggle}
@@ -144,10 +144,9 @@ const getStyles = (colors) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
+  logo: {
+    height: 30,
+    width: 120,
   },
   themeToggle: {
     padding: 6,

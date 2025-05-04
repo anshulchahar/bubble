@@ -246,9 +246,9 @@ const getStyles = (colors) => StyleSheet.create({
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
+    paddingHorizontal: 0, // Removed horizontal padding completely
     paddingVertical: 6,
-    marginLeft: 0,
+    marginLeft: 0, // Ensure no left margin
     borderRadius: 16,
     marginBottom: 20,
   },

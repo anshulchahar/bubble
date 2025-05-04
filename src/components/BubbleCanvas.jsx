@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, PanResponder, Dimensions, TouchableOpacity, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics'; // Import expo-haptics
 import TaskBubble from './TaskBubble';
 import { useTheme } from '../context/ThemeContext';
 
@@ -29,6 +30,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
   const lastGestureStateRef = useRef({ dx: 0, dy: 0 });
   const bubblePhysicsTimerRef = useRef(null);
   const physicsEnabledRef = useRef(true);
+  const isMovingRef = useRef(false);
 
   // Animation refs
   const panX = useRef(new Animated.Value(0)).current;
@@ -412,8 +414,15 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
       onStartShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         // Allow movement if we're already interacting with a bubble or canvas
-        return touchedTaskIdRef.current !== null || isDraggingCanvas || 
-          Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+        const dx = Math.abs(gestureState.dx);
+        const dy = Math.abs(gestureState.dy);
+        return touchedTaskIdRef.current !== null || isDraggingCanvas || dx > 5 || dy > 5;
+      },
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        // Capture the gesture when it clearly looks like a drag
+        const dx = Math.abs(gestureState.dx);
+        const dy = Math.abs(gestureState.dy);
+        return (longPressActive && touchedTaskIdRef.current) || dx > 10 || dy > 10;
       },
       
       onPanResponderGrant: (evt, gestureState) => {
@@ -425,12 +434,12 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         
         // Reset last gesture state
         lastGestureStateRef.current = { dx: 0, dy: 0 };
+        isMovingRef.current = false;
         
         // Find which bubble was touched, if any
-        const touchedTaskId = findTouchedBubble(
-          evt.nativeEvent.locationX || gestureState.x0,
-          evt.nativeEvent.locationY || gestureState.y0
-        );
+        const touchLocationX = evt.nativeEvent.locationX || gestureState.x0;
+        const touchLocationY = evt.nativeEvent.locationY || gestureState.y0;
+        const touchedTaskId = findTouchedBubble(touchLocationX, touchLocationY);
         
         // Clear any existing timer
         if (longPressTimerRef.current) {
@@ -440,8 +449,9 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         
         // Set up long press detection timer
         if (touchedTaskId) {
+          touchedTaskIdRef.current = touchedTaskId; // Store task ID for later use
+          
           longPressTimerRef.current = setTimeout(() => {
-            touchedTaskIdRef.current = touchedTaskId; // Store task ID for dragging
             setLongPressActive(true); // Indicate that long press dragging is active
             
             // Call the onBubbleLongPress if provided
@@ -451,20 +461,13 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
             }
             
             // Provide haptic feedback if available
-            if (Platform.OS === 'ios' && typeof global.HapticFeedback !== 'undefined') {
-              global.HapticFeedback.trigger('impactLight');
-            }
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             
             // Force canvas rerender to show the bubble at the top layer
             setBubblePositions(prev => ({ ...prev }));
           }, 500); // Slightly longer to ensure it's a deliberate long press
-        }
-        
-        // Store the touched task ID for tap handling
-        touchedTaskIdRef.current = touchedTaskId;
-        
-        // If not touching a bubble, prepare for canvas panning
-        if (!touchedTaskId) {
+        } else {
+          // If not touching a bubble, prepare for canvas panning
           setIsDraggingCanvas(true);
           panningRef.current = true;
           lastCanvasGestureRef.current = {
@@ -484,9 +487,13 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         
         // If significant movement detected before long press timer, cancel long press
         const hasSignificantMovement = Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
-        if (longPressTimerRef.current && hasSignificantMovement) {
-          clearTimeout(longPressTimerRef.current);
-          longPressTimerRef.current = null;
+        if (hasSignificantMovement) {
+          isMovingRef.current = true;
+          
+          if (longPressTimerRef.current && !longPressActive) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+          }
         }
         
         const touchedTaskId = touchedTaskIdRef.current;
@@ -536,7 +543,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         
         // Handle bubble press (tap, not drag) if no significant movement
         const touchedTaskId = touchedTaskIdRef.current;
-        const isJustTap = Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
+        const isJustTap = !isMovingRef.current && Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
         
         if (touchedTaskId && !longPressActive && isJustTap) {
           const task = tasks.find(t => t.id === touchedTaskId);
@@ -550,6 +557,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         setLongPressActive(false);
         touchedTaskIdRef.current = null;
         panningRef.current = false;
+        isMovingRef.current = false;
       },
       
       onPanResponderTerminate: () => {
@@ -562,6 +570,7 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         setLongPressActive(false);
         touchedTaskIdRef.current = null;
         panningRef.current = false;
+        isMovingRef.current = false;
       },
     })
   ).current;

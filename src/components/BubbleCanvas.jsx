@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, PanResponder, Dimensions, TouchableOpacity, Animated, Platform } from 'react-native';
+import { 
+  View, 
+  StyleSheet, 
+  PanResponder, 
+  Dimensions, 
+  TouchableOpacity, 
+  Animated, 
+  Platform, 
+  Text,
+  Easing 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics'; // Import expo-haptics
 import TaskBubble from './TaskBubble';
@@ -339,6 +349,9 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
     const adjustedX = (x - canvasOffset.x) / canvasScale;
     const adjustedY = (y - canvasOffset.y) / canvasScale;
     
+    // Debug coordinate calculation - uncomment if needed
+    // console.log('Touch at:', x, y, 'Adjusted to:', adjustedX, adjustedY);
+    
     // Iterate backwards so top bubbles are checked first
     for (let i = validTasks.length - 1; i >= 0; i--) {
       const task = validTasks[i];
@@ -349,12 +362,13 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
       const bubbleCenterX = bubblePos.x;
       const bubbleCenterY = bubblePos.y;
 
-      // Check if touch is within bubble
+      // Check if touch is within bubble with a slightly larger touch area
       const distance = Math.sqrt(
         Math.pow(adjustedX - bubbleCenterX, 2) + Math.pow(adjustedY - bubbleCenterY, 2)
       );
 
-      if (distance <= radius) {
+      // Increase the touch target area by 10% to make it easier to hit
+      if (distance <= radius * 1.1) {
         return task.id;
       }
     }
@@ -437,9 +451,14 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         isMovingRef.current = false;
         
         // Find which bubble was touched, if any
-        const touchLocationX = evt.nativeEvent.locationX || gestureState.x0;
-        const touchLocationY = evt.nativeEvent.locationY || gestureState.y0;
+        const touchLocationX = evt.nativeEvent.locationX;
+        const touchLocationY = evt.nativeEvent.locationY;
+        
+        // Log touch locations for debugging
+        console.log('Touch at:', touchLocationX, touchLocationY);
+        
         const touchedTaskId = findTouchedBubble(touchLocationX, touchLocationY);
+        console.log('Touched task:', touchedTaskId);
         
         // Clear any existing timer
         if (longPressTimerRef.current) {
@@ -451,6 +470,14 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         if (touchedTaskId) {
           touchedTaskIdRef.current = touchedTaskId; // Store task ID for later use
           
+          // Provide immediate feedback that the bubble was touched
+          if (Platform.OS === 'ios') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+          
+          // Force canvas rerender to show visual feedback
+          setBubblePositions(prev => ({ ...prev }));
+          
           longPressTimerRef.current = setTimeout(() => {
             setLongPressActive(true); // Indicate that long press dragging is active
             
@@ -458,14 +485,14 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
             const task = tasks.find(t => t.id === touchedTaskId);
             if (task && onBubbleLongPress) {
               onBubbleLongPress(task);
+              
+              // Provide stronger feedback for long press
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             }
-            
-            // Provide haptic feedback if available
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             
             // Force canvas rerender to show the bubble at the top layer
             setBubblePositions(prev => ({ ...prev }));
-          }, 500); // Slightly longer to ensure it's a deliberate long press
+          }, 400); // Slightly shorter for better responsiveness
         } else {
           // If not touching a bubble, prepare for canvas panning
           setIsDraggingCanvas(true);
@@ -545,10 +572,17 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
         const touchedTaskId = touchedTaskIdRef.current;
         const isJustTap = !isMovingRef.current && Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10;
         
-        if (touchedTaskId && !longPressActive && isJustTap) {
+        if (touchedTaskId && isJustTap) {
           const task = tasks.find(t => t.id === touchedTaskId);
           if (task && onBubblePress) {
+            // Log that we're calling onBubblePress for debugging
+            console.log('Calling onBubblePress for task:', task.id);
             onBubblePress(task);
+            
+            // Provide haptic feedback for tap
+            if (Platform.OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
           }
         }
         
@@ -586,7 +620,6 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
           styles.canvasContent,
           { transform: [{ translateX: panX }, { translateY: panY }, { scale: canvasScale }] }
         ]}
-        {...panResponder.panHandlers}
         onLayout={measureCanvas}
       >
         {tasks.filter(task => !!task.id).map((task) => {
@@ -594,23 +627,43 @@ const BubbleCanvas = ({ tasks, onBubblePress, onBubbleLongPress }) => {
           if (!position) return null;
 
           const radius = getBubbleRadius(task.priority, task.importance);
+          const isDragging = longPressActive && touchedTaskIdRef.current === task.id;
 
           return (
             <TaskBubble
               key={task.id}
               task={task}
-              onPress={null} // We handle press in panResponder
-              onLongPress={null} // We handle long press in panResponder
+              onPress={onBubblePress} // Directly pass the press handler from props
+              onLongPress={(task) => {
+                // Handle long press for dragging
+                touchedTaskIdRef.current = task.id;
+                setLongPressActive(true);
+                
+                // Call the external long press handler if provided
+                if (onBubbleLongPress) {
+                  onBubbleLongPress(task);
+                }
+                
+                // Provide haptic feedback
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }}
+              isDragging={isDragging}
               style={{
                 position: 'absolute',
                 left: position.x - radius,
                 top: position.y - radius,
-                zIndex: longPressActive && touchedTaskIdRef.current === task.id ? 1000 : 1,
+                zIndex: isDragging ? 1000 : 1,
               }}
             />
           );
         })}
       </Animated.View>
+      
+      {/* Canvas touch area for panning - placed behind bubbles */}
+      <View 
+        style={styles.panningOverlay}
+        {...panResponder.panHandlers}
+      />
       
       {/* Recenter button */}
       <TouchableOpacity 
@@ -635,6 +688,12 @@ const getStyles = (colors) => StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
+    zIndex: 10, // Ensure bubbles are above the panning overlay
+  },
+  panningOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 5, // Below bubbles but above other elements
   },
   recenterButton: {
     position: 'absolute',
@@ -651,7 +710,7 @@ const getStyles = (colors) => StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 3,
-  }
+  },
 });
 
 export default BubbleCanvas;

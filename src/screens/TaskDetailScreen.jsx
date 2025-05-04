@@ -88,7 +88,6 @@ const TaskDetailScreen = ({ route, navigation }) => {
             onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
-            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
 
@@ -105,7 +104,7 @@ const TaskDetailScreen = ({ route, navigation }) => {
               { backgroundColor: `${statusInfo.color}33` } // Add alpha transparency
             ]}
           >
-            <Text style={[styles.statusText, { color: statusInfo.color }]}>
+            <Text style={[styles.statusText, { color: colors.primary }]}>
               {statusInfo.text}
             </Text>
           </View>
@@ -149,16 +148,15 @@ const TaskDetailScreen = ({ route, navigation }) => {
                     <TouchableOpacity
                       key={statusValue}
                       style={[
-                        styles.statusButton,
-                        { borderColor: currentStatusInfo.color },
-                        isActive && { backgroundColor: currentStatusInfo.color }
+                        styles.statusButton
+                        // Removed the active background color style
                       ]}
                       onPress={() => handleStatusChange(statusValue)}
                     >
                       <Text
                         style={[
                           styles.statusButtonText,
-                          { color: isActive ? colors.bubbleText : currentStatusInfo.color }
+                          { color: isActive ? colors.primary : colors.text }
                         ]}
                       >
                         {currentStatusInfo.text}
@@ -180,11 +178,11 @@ const TaskDetailScreen = ({ route, navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, styles.deleteButton]}
+              style={styles.actionButton}
               onPress={handleDelete}
             >
-              <Ionicons name="trash-outline" size={20} color={colors.bubbleTodo.split(' ')[2]} style={styles.buttonIcon} />
-              <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete Task</Text>
+              <Ionicons name="trash-outline" size={20} color={colors.bubbleText} style={styles.buttonIcon} />
+              <Text style={styles.actionButtonText}>Delete Task</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -248,8 +246,9 @@ const getStyles = (colors) => StyleSheet.create({
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
+    paddingHorizontal: 0, // Removed horizontal padding completely
     paddingVertical: 6,
+    marginLeft: 0, // Ensure no left margin
     borderRadius: 16,
     marginBottom: 20,
   },
@@ -301,8 +300,9 @@ const getStyles = (colors) => StyleSheet.create({
   statusButton: {
     flex: 1,
     paddingVertical: 10,
-    borderWidth: 1.5, // Slightly thicker border
-    borderRadius: 8, // More rounded
+    borderWidth: 1,
+    borderColor: colors.text, // Use text color which will be black in light mode and white in dark mode
+    borderRadius: 8,
     alignItems: 'center',
     marginHorizontal: 4,
   },

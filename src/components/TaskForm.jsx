@@ -123,9 +123,20 @@ const TaskForm = ({ task, onSave, onCancel }) => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.formTitle}>
-        {task ? 'Edit Task' : 'Add New Task'}
-      </Text>
+      {/* Back Button */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={onCancel}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        
+        {/* Title aligned with back button */}
+        <Text style={styles.formTitle}>
+          {task ? 'Edit Task' : ''}
+        </Text>
+      </View>
 
       {/* Title Input */}
       <View style={styles.formGroup}>
@@ -168,15 +179,14 @@ const TaskForm = ({ task, onSave, onCancel }) => {
               <TouchableOpacity
                 key={statusValue}
                 style={[
-                  styles.statusOption,
-                  { borderColor: currentStatusInfo.color },
-                  isActive && { backgroundColor: currentStatusInfo.color },
+                  styles.statusOption
+                  // Removed the active background color style
                 ]}
                 onPress={() => setStatus(statusValue)}
               >
                 <Text style={[
                   styles.statusText,
-                  { color: isActive ? colors.bubbleText : currentStatusInfo.color },
+                  { color: isActive ? colors.primary : colors.text },
                 ]}>
                   {currentStatusInfo.text}
                 </Text>
@@ -250,13 +260,24 @@ const getStyles = (colors) => StyleSheet.create({
   contentContainer: {
     padding: 20,
     paddingBottom: 40, // Ensure space for buttons
+    paddingLeft: 12, // Reduced left padding
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingTop: 8,
+  },
+  backButton: {
+    padding: 8,
+    marginLeft: -8, // Negative margin to align with container edge
   },
   formTitle: {
-    fontSize: 24, // Larger title
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 24,
     color: colors.text,
-    textAlign: 'center',
+    marginLeft: 16,
+    flex: 1,
   },
   formGroup: {
     marginBottom: 20, // Consistent spacing
@@ -332,8 +353,8 @@ const getStyles = (colors) => StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1, // Border inside container
-    borderRightWidth: 0, // Remove right border, container handles edges
+    borderWidth: 0, // Remove border
+    borderRightWidth: 0,
     borderLeftWidth: 0,
     marginHorizontal: 0,
   },

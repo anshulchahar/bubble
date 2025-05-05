@@ -17,19 +17,80 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
 
+  // Function to ensure the user record exists in the users table
+  const ensureUserExists = async (session) => {
+    if (!session || !session.user) return false;
+    
+    try {
+      // First check if the user already exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
+      
+      // If user exists, we're good
+      if (existingUser) return true;
+      
+      // If error is not "not found", something else is wrong
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking user:', checkError);
+        return false;
+      }
+      
+      // User doesn't exist, try to create them using a server function
+      // Since we can't directly insert due to RLS, we'll use rpc
+      console.log('User not found, creating user record via RPC...');
+      
+      // Use a workaround - execute SQL directly with service role permissions
+      const { error: createError } = await supabase.rpc('create_user_record', {
+        user_id: session.user.id,
+        user_email: session.user.email,
+        user_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User'
+      });
+      
+      if (createError) {
+        console.error('Error creating user via RPC:', createError);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in ensureUserExists:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Get the current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // If we have a session, make sure the user exists in the users table
+      if (session) {
+        ensureUserExists(session)
+          .then(success => {
+            if (!success) {
+              console.warn('Failed to ensure user exists in the database.');
+            }
+          });
+      }
+      
       setLoading(false);
     });
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // If user signed in, ensure they exist in the users table
+        if (event === 'SIGNED_IN' && session) {
+          await ensureUserExists(session);
+        }
+        
         setLoading(false);
       }
     );

@@ -48,29 +48,17 @@ function ThemedApp() {
   return (
     <NavigationContainer>
       <StatusBar style="light" />
-      {user ? (
-        // Authenticated routes
-        <Stack.Navigator
-          initialRouteName="Home"
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="TaskForm" component={TaskFormScreen} />
-          <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
-        </Stack.Navigator>
-      ) : (
-        // Authentication routes
-        <Stack.Navigator
-          initialRouteName="SignIn"
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen name="SignIn" component={SignInScreen} />
-        </Stack.Navigator>
-      )}
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="TaskForm" component={TaskFormScreen} />
+        <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
+        <Stack.Screen name="SignIn" component={SignInScreen} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

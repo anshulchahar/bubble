@@ -12,18 +12,47 @@ const HomeScreen = ({ navigation }) => {
   const { colors, isDark, setScheme } = useTheme();
   const { user, signOut } = useAuth();
 
-  // Fetch tasks when the component mounts
+  // Fetch tasks when the component mounts and user is authenticated
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (user) {
+      fetchTasks();
+    }
+  }, [user]);
 
   // Handle bubble press to view task details
   const handleBubblePress = (task) => {
+    // Check if user is authenticated before navigating to task details
+    if (!user) {
+      // Prompt unauthenticated users to sign in first
+      Alert.alert(
+        "Sign In Required",
+        "Please sign in to view task details",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Sign In", onPress: () => navigation.navigate('SignIn'), style: "default" }
+        ]
+      );
+      return;
+    }
     navigation.navigate('TaskDetail', { taskId: task.id });
   };
 
   // Handle bubble long press for quick status change
   const handleBubbleLongPress = (task) => {
+    // Check if user is authenticated before modifying tasks
+    if (!user) {
+      // Prompt unauthenticated users to sign in first
+      Alert.alert(
+        "Sign In Required",
+        "Please sign in to modify tasks",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Sign In", onPress: () => navigation.navigate('SignIn'), style: "default" }
+        ]
+      );
+      return;
+    }
+    
     let newStatus;
     switch (task.status) {
       case 'todo': newStatus = 'in-progress'; break;
@@ -81,11 +110,22 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <View style={styles.headerIcons}>
-          {/* User greeting and profile */}
-          <TouchableOpacity style={styles.userInfo} onPress={handleSignOut}>
-            <Text style={styles.userGreeting}>Hi, {user?.email?.split('@')[0] || 'User'}</Text>
-            <Ionicons name="log-out-outline" size={18} color={colors.text} />
-          </TouchableOpacity>
+          {user ? (
+            // User is authenticated - show user info and sign out option
+            <TouchableOpacity style={styles.userInfo} onPress={handleSignOut}>
+              <Text style={styles.userGreeting}>Hi, {user?.email?.split('@')[0] || 'User'}</Text>
+              <Ionicons name="log-out-outline" size={18} color={colors.text} />
+            </TouchableOpacity>
+          ) : (
+            // User is not authenticated - show sign in button
+            <TouchableOpacity 
+              style={styles.signInButton}
+              onPress={() => navigation.navigate('SignIn')}
+            >
+              <Text style={styles.signInText}>Sign In</Text>
+              <Ionicons name="log-in-outline" size={18} color={colors.text} />
+            </TouchableOpacity>
+          )}
           
           {/* Theme toggle */}
           <TouchableOpacity 
@@ -141,13 +181,13 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading your tasks...</Text>
           </View>
-        ) : filteredTasks.length > 0 ? (
+        ) : user && filteredTasks.length > 0 ? (
           <BubbleCanvas
             tasks={filteredTasks}
             onBubblePress={handleBubblePress}
             onBubbleLongPress={handleBubbleLongPress}
           />
-        ) : (
+        ) : user ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="cloud-outline" size={60} color={colors.textSecondary} />
             <Text style={styles.emptyTitle}>No tasks yet</Text>
@@ -155,16 +195,26 @@ const HomeScreen = ({ navigation }) => {
               Tap the + button to add your first task
             </Text>
           </View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="layers-outline" size={60} color={colors.textSecondary} />
+            <Text style={styles.emptyTitle}>Welcome to Bubble</Text>
+            <Text style={styles.emptySubtitle}>
+              Sign in to create and manage your tasks
+            </Text>
+          </View>
         )}
       </View>
 
-      {/* Modern Add Button */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate('TaskForm')}
-      >
-        <Ionicons name="add" size={32} color={colors.bubbleText} />
-      </TouchableOpacity>
+      {/* Modern Add Button - only show for authenticated users */}
+      {user && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('TaskForm')}
+        >
+          <Ionicons name="add" size={32} color={colors.bubbleText} />
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 };
@@ -205,6 +255,23 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  signInButton: {
+    flexDirection: 'row', 
+    alignItems: 'center',
+    marginRight: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  signInText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.bubbleText,
+    marginRight: 6,
   },
   userGreeting: {
     fontSize: 12,

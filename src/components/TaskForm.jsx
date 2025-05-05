@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext'; // Import useTheme
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Slider from '@react-native-community/slider'; // Import Slider component
 import { Ionicons } from '@expo/vector-icons'; // For icons
 
 const TaskForm = ({ task, onSave, onCancel }) => {
@@ -99,23 +100,21 @@ const TaskForm = ({ task, onSave, onCancel }) => {
   const renderSlider = (value, setValue, label) => {
     return (
       <View style={styles.formGroup}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={styles.sliderTrack}>
-          {[1, 2, 3, 4, 5].map(num => (
-            <TouchableOpacity
-              key={num}
-              style={[
-                styles.sliderButton,
-                { borderColor: colors.border }, // Theme border
-                value >= num && { backgroundColor: colors.primary } // Active state based on value
-              ]}
-              onPress={() => setValue(num)}
-            >
-              <Text style={[styles.sliderText, value >= num && styles.sliderTextActive]}>
-                {num}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.sliderLabelContainer}>
+          <Text style={styles.label}>{label}</Text>
+        </View>
+        <View style={styles.sliderContainer}>
+          <Slider
+            style={styles.slider}
+            minimumValue={1}
+            maximumValue={5}
+            step={1}
+            value={value}
+            onValueChange={setValue}
+            minimumTrackTintColor={colors.primary}
+            maximumTrackTintColor={colors.border}
+            thumbTintColor={colors.primary}
+          />
         </View>
       </View>
     );
@@ -310,35 +309,17 @@ const getStyles = (colors) => StyleSheet.create({
       fontSize: 16,
   },
   sliderContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
-  sliderTrack: {
+  sliderLabelContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: colors.card, // Background for track
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden', // Clip buttons
-  },
-  sliderButton: {
-    flex: 1,
-    paddingVertical: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRightWidth: 1,
-    borderRightColor: colors.border,
+    marginBottom: 8,
   },
-  sliderButtonActive: {
-    // Style applied inline
-  },
-  sliderText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-  sliderTextActive: {
-    color: colors.bubbleText, // White text on primary
-    fontWeight: 'bold',
+  slider: {
+    width: '100%',
+    height: 40,
   },
   statusContainer: {
     flexDirection: 'row',

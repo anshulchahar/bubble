@@ -27,4 +27,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Google Auth credentials
-export const GOOGLE_CLIENT_ID = '907178571574-1nj6c20npdh5cbptt7s8p4maatordmhu.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = '907178571574-c7po4neoudf0bgra4d2ppoobocsf2eh8.apps.googleusercontent.com';

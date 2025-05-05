@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { supabase, GOOGLE_CLIENT_ID } from '../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
@@ -37,6 +37,15 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // For debugging purposes - display the proxy URI without triggering the auth flow
+  useEffect(() => {
+    const debugProxyUri = AuthSession.makeRedirectUri({ 
+      path: 'auth/callback',
+      useProxy: true
+    });
+    console.log('Debug Proxy URI:', debugProxyUri);
+  }, []);
+
   // Standard email/password sign in
   const signInWithEmail = async (email, name) => {
     try {
@@ -64,20 +73,24 @@ export function AuthProvider({ children }) {
     try {
       setLoading(true);
       
-      // For Expo development, include the exact host you're working with
-      const redirectUri = AuthSession.makeRedirectUri({ 
+      // For development in Expo Go
+      const proxyRedirectUri = AuthSession.makeRedirectUri({ 
         path: 'auth/callback',
-        // For development in Expo Go
-        useProxy: false
+        useProxy: true
       });
       
-      // This will log something like exp://192.168.0.100:8081/--/auth/callback
-      console.log('Redirect URI for Google auth:', redirectUri);
+      // For native iOS/Android standalone apps
+      const nativeRedirectUri = AuthSession.makeRedirectUri({
+        native: 'com.schepor.poptodo://auth/callback',
+      });
+      
+      // Choose the appropriate redirect URI based on environment
+      const redirectUri = __DEV__ ? proxyRedirectUri : nativeRedirectUri;
+      
+      // Log the URI for debugging
+      console.log('Using Redirect URI:', redirectUri);
       
       const nonce = Crypto.randomUUID();
-      
-      // For debugging - log relevant information
-      console.log('Using provider: google');
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

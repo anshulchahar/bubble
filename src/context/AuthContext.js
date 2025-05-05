@@ -73,29 +73,40 @@ export function AuthProvider({ children }) {
     try {
       setLoading(true);
       
-      // For development in Expo Go
-      const proxyRedirectUri = AuthSession.makeRedirectUri({ 
-        path: 'auth/callback',
-        useProxy: true
-      });
-      
-      // For native iOS/Android standalone apps
-      const nativeRedirectUri = AuthSession.makeRedirectUri({
-        native: 'com.schepor.poptodo://auth/callback',
-      });
-      
-      // Choose the appropriate redirect URI based on environment
-      const redirectUri = __DEV__ ? proxyRedirectUri : nativeRedirectUri;
+      // For development in Expo Go - Dynamic IP address can cause issues with Google OAuth
+      // Using a fixed endpoint that's registered with Google
+      const proxyRedirectUri = 'https://auth.expo.io/@anshulchahar/bubble';
       
       // Log the URI for debugging
-      console.log('Using Redirect URI:', redirectUri);
+      console.log('Using fixed Redirect URI:', proxyRedirectUri);
       
-      const nonce = Crypto.randomUUID();
+      // Generate a proper PKCE code verifier
+      const generateCodeVerifier = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+        let result = '';
+        const length = 96;
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      };
+      
+      const codeVerifier = generateCodeVerifier();
+      console.log('Generated code verifier with length:', codeVerifier.length);
+      console.log('Code verifier first 10 chars:', codeVerifier.substring(0, 10) + '...');
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUri,
+          redirectTo: proxyRedirectUri,
+          skipBrowserRedirect: true,
+          codeVerifier: codeVerifier,
+          // Ensure the response type is set to 'code'
+          queryParams: {
+            response_type: 'code',
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         },
       });
       
@@ -108,17 +119,77 @@ export function AuthProvider({ children }) {
         throw new Error('No authorization URL returned');
       }
 
-      console.log('Opening auth URL...');
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+      console.log('Opening auth URL...', data.url.substring(0, 50) + '...');
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        proxyRedirectUri,
+        {
+          showInRecents: true,
+          createTask: true
+        }
+      );
       console.log('Auth result type:', result.type);
       
       if (result.type === 'success') {
         const { url } = result;
-        console.log('Auth successful, exchanging code for session');
-        const { error } = await supabase.auth.exchangeCodeForSession(url);
-        if (error) {
-          console.error('Session exchange error:', error);
-          throw error;
+        console.log('Auth successful with URL:', url.substring(0, 50) + '...');
+        
+        // Try to extract code from URL query parameters first
+        const sessionUrl = new URL(url);
+        const code = sessionUrl.searchParams.get('code');
+        
+        if (code) {
+          // Authorization code flow - proceed with code exchange
+          console.log('Got authorization code, starting session exchange');
+          
+          // Exchange code for session using the same codeVerifier
+          const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code, codeVerifier);
+          
+          if (sessionError) {
+            console.error('Session exchange error:', JSON.stringify(sessionError, null, 2));
+            throw sessionError;
+          }
+          
+          console.log('Session exchange successful:', sessionData ? 'Session data received' : 'No session data');
+        } else {
+          // Check for token in URL fragment (#)
+          console.log('No code found, checking for fragment with access token');
+          const hashParams = url.split('#')[1];
+          
+          if (hashParams && hashParams.includes('access_token=')) {
+            console.log('Found access token in URL fragment, using it directly');
+            
+            // Parse the access token and other parameters from the fragment
+            const fragmentParams = hashParams.split('&').reduce((params, param) => {
+              const [key, value] = param.split('=');
+              params[key] = decodeURIComponent(value);
+              return params;
+            }, {});
+            
+            const { access_token, refresh_token, expires_in } = fragmentParams;
+            
+            if (access_token) {
+              console.log('Setting session with access token');
+              
+              // Set the session manually with the token we received
+              const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                access_token,
+                refresh_token: refresh_token || null,
+              });
+              
+              if (sessionError) {
+                console.error('Setting session error:', JSON.stringify(sessionError, null, 2));
+                throw sessionError;
+              }
+              
+              console.log('Session set successful:', sessionData ? 'Session data received' : 'No session data');
+            } else {
+              throw new Error('No access token found in the redirect URL');
+            }
+          } else {
+            console.error('No code or access token found in the redirect URL');
+            throw new Error('No authorization code or access token found in the redirect URL');
+          }
         }
       } else {
         console.log('Auth was dismissed or failed:', result.type);

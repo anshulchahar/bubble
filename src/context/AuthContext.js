@@ -63,35 +63,59 @@ export function AuthProvider({ children }) {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
-      const redirectUri = AuthSession.makeRedirectUri({ path: 'auth/callback' });
+      
+      // For Expo development, include the exact host you're working with
+      const redirectUri = AuthSession.makeRedirectUri({ 
+        path: 'auth/callback',
+        // For development in Expo Go
+        useProxy: false
+      });
+      
+      // This will log something like exp://192.168.0.100:8081/--/auth/callback
+      console.log('Redirect URI for Google auth:', redirectUri);
+      
       const nonce = Crypto.randomUUID();
+      
+      // For debugging - log relevant information
+      console.log('Using provider: google');
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
           redirectTo: redirectUri,
-          nonce,
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('OAuth request error:', JSON.stringify(error, null, 2));
+        throw error;
+      }
 
-      const result = await WebBrowser.openAuthSessionAsync(
-        data?.url,
-        redirectUri
-      );
+      if (!data?.url) {
+        throw new Error('No authorization URL returned');
+      }
+
+      console.log('Opening auth URL...');
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+      console.log('Auth result type:', result.type);
       
       if (result.type === 'success') {
         const { url } = result;
-        await supabase.auth.exchangeCodeForSession(url);
+        console.log('Auth successful, exchanging code for session');
+        const { error } = await supabase.auth.exchangeCodeForSession(url);
+        if (error) {
+          console.error('Session exchange error:', error);
+          throw error;
+        }
+      } else {
+        console.log('Auth was dismissed or failed:', result.type);
+        if (result.type === 'cancel') {
+          Alert.alert('Authentication Cancelled', 'You cancelled the authentication process');
+        }
       }
     } catch (error) {
-      Alert.alert('Error', error.message);
-      console.error(error);
+      Alert.alert('Sign In Error', error.message);
+      console.error('Sign in error details:', JSON.stringify(error, null, 2));
     } finally {
       setLoading(false);
     }

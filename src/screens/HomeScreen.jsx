@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert } from 'react-native';
 import BubbleCanvas from '../components/BubbleCanvas';
 import useTaskStore from '../lib/store';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const HomeScreen = ({ navigation }) => {
-  const { tasks, setTaskStatus } = useTaskStore();
+  const { tasks, setTaskStatus, fetchTasks, isLoading } = useTaskStore();
   const [filter, setFilter] = useState('all');
   const { colors, isDark, setScheme } = useTheme();
+  const { user, signOut } = useAuth();
+
+  // Fetch tasks when the component mounts
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   // Handle bubble press to view task details
   const handleBubblePress = (task) => {
@@ -30,6 +37,18 @@ const HomeScreen = ({ navigation }) => {
   // Handle theme toggle with icon click
   const toggleTheme = () => {
     setScheme(isDark ? 'light' : 'dark');
+  };
+
+  // Handle sign out
+  const handleSignOut = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Sign Out", onPress: signOut, style: "destructive" }
+      ]
+    );
   };
 
   // Get filter icon based on filter type
@@ -61,17 +80,25 @@ const HomeScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-        {/* Replace toggle switch with just an icon */}
-        <TouchableOpacity 
-          style={styles.themeToggle}
-          onPress={toggleTheme}
-        >
-          <Ionicons 
-            name={isDark ? "sunny" : "moon"} 
-            size={24} 
-            color={colors.primary} 
-          />
-        </TouchableOpacity>
+        <View style={styles.headerIcons}>
+          {/* User greeting and profile */}
+          <TouchableOpacity style={styles.userInfo} onPress={handleSignOut}>
+            <Text style={styles.userGreeting}>Hi, {user?.email?.split('@')[0] || 'User'}</Text>
+            <Ionicons name="log-out-outline" size={18} color={colors.text} />
+          </TouchableOpacity>
+          
+          {/* Theme toggle */}
+          <TouchableOpacity 
+            style={styles.themeToggle}
+            onPress={toggleTheme}
+          >
+            <Ionicons 
+              name={isDark ? "sunny" : "moon"} 
+              size={24} 
+              color={colors.primary} 
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Compact Filter Bar with Icons */}
@@ -110,11 +137,25 @@ const HomeScreen = ({ navigation }) => {
 
       {/* Bubble Canvas */}
       <View style={styles.canvasContainer}>
-        <BubbleCanvas
-          tasks={filteredTasks}
-          onBubblePress={handleBubblePress}
-          onBubbleLongPress={handleBubbleLongPress}
-        />
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading your tasks...</Text>
+          </View>
+        ) : filteredTasks.length > 0 ? (
+          <BubbleCanvas
+            tasks={filteredTasks}
+            onBubblePress={handleBubblePress}
+            onBubbleLongPress={handleBubbleLongPress}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="cloud-outline" size={60} color={colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No tasks yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Tap the + button to add your first task
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Modern Add Button */}
@@ -149,6 +190,27 @@ const getStyles = (colors) => StyleSheet.create({
     height: 35,
     width: 120,
     marginLeft: -25, // Add negative margin to pull logo closer to edge
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userInfo: {
+    flexDirection: 'row', 
+    alignItems: 'center',
+    marginRight: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  userGreeting: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text,
+    marginRight: 6,
   },
   themeToggle: {
     padding: 6,
@@ -198,6 +260,34 @@ const getStyles = (colors) => StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginTop: 20,
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 10,
+    maxWidth: '80%',
   },
   addButton: {
     position: 'absolute',

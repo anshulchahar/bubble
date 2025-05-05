@@ -13,7 +13,8 @@
       "backgroundColor": "#121212"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.schepor.poptodo"
     },
     "android": {
       "adaptiveIcon": {

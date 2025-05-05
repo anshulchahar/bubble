@@ -1,15 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import 'react-native-url-polyfill';
 
-// These would be environment variables in a production app
-const supabaseUrl = 'https://your-supabase-url.supabase.co';
-const supabaseKey = 'your-supabase-anon-key';
+// Supabase credentials
+const supabaseUrl = 'https://dsseogckfyanxqrqzupu.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzc2VvZ2NrZnlhbnhxcnF6dXB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY0Mzg1MDcsImV4cCI6MjA2MjAxNDUwN30.jP_GR2RqBrYZxmhYBdk3rEVLEl9jM4zb8T9fuxRAZ_o';
 
 // Create a single supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+  global: {
+    // Use fetch directly to avoid Node.js module dependencies
+    fetch: fetch.bind(globalThis),
+  },
+  // Disable realtime features to avoid WebSocket dependencies
+  realtime: {
+    params: {
+      eventsPerSecond: 0,
+    },
+  },
+});
 
-// For a real implementation, you would need to:
-// 1. Create a Supabase account
-// 2. Create a new project
-// 3. Get the URL and anon key from the project settings
-// 4. Replace the placeholder values above with your actual credentials
-// 5. Set up the database tables according to the task model
+// Google Auth credentials
+export const GOOGLE_CLIENT_ID = '907178571574-1nj6c20npdh5cbptt7s8p4maatordmhu.apps.googleusercontent.com';

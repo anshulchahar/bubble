@@ -19,6 +19,13 @@ const useTaskStore = create((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       
+      // Get the current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session || !session.user) {
+        throw new Error('You must be logged in to fetch tasks');
+      }
+      
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
@@ -38,6 +45,14 @@ const useTaskStore = create((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       
+      // Get the current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session || !session.user) {
+        throw new Error('You must be logged in to add a task');
+      }
+      
+      // Add the task with the user_id from the session
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -45,11 +60,20 @@ const useTaskStore = create((set, get) => ({
           description: task.description,
           status: task.status || TaskStatus.TODO,
           priority: task.priority || 3,
-          due_date: task.dueDate
+          due_date: task.dueDate,
+          user_id: session.user.id,
+          importance: task.importance || 3,
+          category: task.category || ''
         })
         .select();
       
-      if (error) throw error;
+      if (error) {
+        // If the error is related to missing user, ask the user to sign out and sign in again
+        if (error.code === '23503' && error.message.includes('user_id')) {
+          throw new Error('User account not properly set up. Please sign out and sign in again.');
+        }
+        throw error;
+      }
       
       // Update local state with the new task
       set(state => ({ 
@@ -70,6 +94,13 @@ const useTaskStore = create((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       
+      // Get the current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session || !session.user) {
+        throw new Error('You must be logged in to update a task');
+      }
+      
       const { data, error } = await supabase
         .from('tasks')
         .update({
@@ -78,6 +109,8 @@ const useTaskStore = create((set, get) => ({
           status: updatedTask.status,
           priority: updatedTask.priority,
           due_date: updatedTask.dueDate,
+          importance: updatedTask.importance || 3,
+          category: updatedTask.category || '',
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -105,6 +138,13 @@ const useTaskStore = create((set, get) => ({
   deleteTask: async (id) => {
     try {
       set({ isLoading: true, error: null });
+      
+      // Get the current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session || !session.user) {
+        throw new Error('You must be logged in to delete a task');
+      }
       
       const { error } = await supabase
         .from('tasks')

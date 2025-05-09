@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert, ActivityIndicator } from 'react-native';
 import BubbleCanvas from '../components/BubbleCanvas';
 import useTaskStore from '../lib/store';
 import { useTheme } from '../context/ThemeContext';
@@ -12,47 +12,18 @@ const HomeScreen = ({ navigation }) => {
   const { colors, isDark, setScheme } = useTheme();
   const { user, signOut } = useAuth();
 
-  // Fetch tasks when the component mounts and user is authenticated
+  // Fetch tasks when the component mounts
   useEffect(() => {
-    if (user) {
-      fetchTasks();
-    }
-  }, [user]);
+    fetchTasks();
+  }, []);
 
   // Handle bubble press to view task details
   const handleBubblePress = (task) => {
-    // Check if user is authenticated before navigating to task details
-    if (!user) {
-      // Prompt unauthenticated users to sign in first
-      Alert.alert(
-        "Sign In Required",
-        "Please sign in to view task details",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Sign In", onPress: () => navigation.navigate('SignIn'), style: "default" }
-        ]
-      );
-      return;
-    }
     navigation.navigate('TaskDetail', { taskId: task.id });
   };
 
   // Handle bubble long press for quick status change
   const handleBubbleLongPress = (task) => {
-    // Check if user is authenticated before modifying tasks
-    if (!user) {
-      // Prompt unauthenticated users to sign in first
-      Alert.alert(
-        "Sign In Required",
-        "Please sign in to modify tasks",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Sign In", onPress: () => navigation.navigate('SignIn'), style: "default" }
-        ]
-      );
-      return;
-    }
-    
     let newStatus;
     switch (task.status) {
       case 'todo': newStatus = 'in-progress'; break;
@@ -123,7 +94,7 @@ const HomeScreen = ({ navigation }) => {
               onPress={() => navigation.navigate('SignIn')}
             >
               <Text style={styles.signInText}>Sign In</Text>
-              <Ionicons name="log-in-outline" size={18} color={colors.text} />
+              <Ionicons name="log-in-outline" size={18} color={colors.primary} />
             </TouchableOpacity>
           )}
           
@@ -179,42 +150,35 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.canvasContainer}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading your tasks...</Text>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading tasks...</Text>
           </View>
-        ) : user && filteredTasks.length > 0 ? (
+        ) : filteredTasks.length > 0 ? (
           <BubbleCanvas
             tasks={filteredTasks}
             onBubblePress={handleBubblePress}
             onBubbleLongPress={handleBubbleLongPress}
           />
-        ) : user ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cloud-outline" size={60} color={colors.textSecondary} />
-            <Text style={styles.emptyTitle}>No tasks yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Tap the + button to add your first task
-            </Text>
-          </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Ionicons name="layers-outline" size={60} color={colors.textSecondary} />
-            <Text style={styles.emptyTitle}>Welcome to Bubble</Text>
+            <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No Tasks Yet</Text>
             <Text style={styles.emptySubtitle}>
-              Sign in to create and manage your tasks
+              {filter === 'all' 
+                ? "Tap the + button to create your first task!"
+                : `No ${filter} tasks found. Try a different filter.`}
             </Text>
           </View>
         )}
       </View>
 
-      {/* Modern Add Button - only show for authenticated users */}
-      {user && (
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('TaskForm')}
-        >
-          <Ionicons name="add" size={32} color={colors.bubbleText} />
-        </TouchableOpacity>
-      )}
+      {/* Modern Add Button */}
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => navigation.navigate('TaskForm')}
+      >
+        <Ionicons name="add" size={32} color={colors.bubbleText} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };

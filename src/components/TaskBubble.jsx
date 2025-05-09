@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, PanResponder } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 
 const TaskBubble = ({ task, style, isDragging, onPress, onLongPress }) => {
   const { colors } = useTheme();
-
+  const [dragging, setDragging] = useState(false);
+  const pan = useRef(new Animated.ValueXY()).current;
+  
   // Calculate bubble size based on priority and importance
   const getBubbleRadius = (priority, importance) => {
     const base = 30;
@@ -31,45 +33,72 @@ const TaskBubble = ({ task, style, isDragging, onPress, onLongPress }) => {
   const radius = getBubbleRadius(task.priority, task.importance);
   const gradientColors = getBubbleGradient(task.status);
 
+  // Create a simple pan responder for dragging
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // Store the current position in the offset
+        pan.setOffset({
+          x: pan.x._value,
+          y: pan.y._value
+        });
+        pan.setValue({ x: 0, y: 0 });
+        
+        // Set a timer for long press detection
+        setTimeout(() => {
+          setDragging(true);
+        }, 200);
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: pan.x, dy: pan.y }],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: (e, gesture) => {
+        pan.flattenOffset();
+        
+        // Check if this was a quick tap vs. a drag
+        if (!dragging && Math.abs(gesture.dx) < 5 && Math.abs(gesture.dy) < 5) {
+          if (onPress) onPress(task);
+        } else {
+          // Was a drag - call long press handler if needed
+          if (dragging && onLongPress) onLongPress(task);
+        }
+        
+        setDragging(false);
+      }
+    })
+  ).current;
+
   // Dynamic styles
   const dynamicStyles = getStyles(radius, colors);
 
-  // Combine styles with dragging styles
-  const combinedContainerStyle = [
-    dynamicStyles.container,
-    style,
-    // Add shadow and scale effect when dragging
-    isDragging && {
+  // Calculate animated styles
+  const animatedStyle = {
+    transform: [{ translateX: pan.x }, { translateY: pan.y }],
+    ...dragging && {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.5,
-      shadowRadius: 10,
-      elevation: 15,
-      transform: [{ scale: 1.05 }]
-    }
-  ];
-
-  // Handle press - make sure to handle the case where onPress is null
-  const handlePress = () => {
-    if (onPress) {
-      onPress(task);
-    }
-  };
-
-  // Handle long press - make sure to handle the case where onLongPress is null
-  const handleLongPress = () => {
-    if (onLongPress) {
-      onLongPress(task);
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.6,
+      shadowRadius: 12,
+      elevation: 20,
+      zIndex: 1000,
+      transform: [
+        { translateX: pan.x },
+        { translateY: pan.y },
+        { scale: 1.1 }
+      ]
     }
   };
 
   return (
-    <TouchableOpacity
-      style={combinedContainerStyle}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      delayLongPress={500}
-      activeOpacity={0.7}
+    <Animated.View
+      style={[
+        dynamicStyles.container,
+        style,
+        animatedStyle
+      ]}
+      {...panResponder.panHandlers}
     >
       <LinearGradient
         colors={gradientColors}
@@ -83,7 +112,7 @@ const TaskBubble = ({ task, style, isDragging, onPress, onLongPress }) => {
           </Text>
         </View>
       </LinearGradient>
-    </TouchableOpacity>
+    </Animated.View>
   );
 };
 
@@ -116,7 +145,7 @@ const getStyles = (radius, colors) => StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     fontSize: Math.max(10, Math.min(14, radius * 0.3)),
-  },
+  }
 });
 
 export default TaskBubble;

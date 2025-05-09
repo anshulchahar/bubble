@@ -18,9 +18,9 @@
     "assert": "^2.1.0",
     "buffer": "^6.0.3",
     "events": "^3.3.0",
-    "expo": "~53.0.0",
+    "expo": "53.0.9",
     "expo-auth-session": "^6.1.5",
-    "expo-constants": "^17.1.5",
+    "expo-constants": "~17.1.6",
     "expo-crypto": "^14.1.4",
     "expo-haptics": "^14.1.4",
     "expo-linear-gradient": "~14.1.4",
@@ -43,7 +43,10 @@
     "react-native-url-polyfill": "^2.0.0",
     "stream-browserify": "^3.0.0",
     "web-streams-polyfill": "^4.1.0",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "react-dom": "19.0.0",
+    "react-native-web": "^0.20.0",
+    "@expo/metro-runtime": "~5.0.4"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0"

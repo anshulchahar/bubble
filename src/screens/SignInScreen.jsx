@@ -11,21 +11,27 @@ import {
   Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
-export default function SignInScreen() {
+export default function SignInScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const { signInWithEmail, signInWithGoogle, loading } = useAuth();
+  const { colors } = useTheme();
 
   const handleEmailSignIn = () => {
     if (!email) return;
     signInWithEmail(email, name);
   };
 
+  const handleContinueWithoutSignIn = () => {
+    navigation.navigate('Home');
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <View style={styles.content}>
         <Image 
@@ -34,21 +40,33 @@ export default function SignInScreen() {
           resizeMode="contain"
         />
         
-        <Text style={styles.title}>Welcome to Bubble</Text>
-        <Text style={styles.subtitle}>Sign in to access your tasks</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Welcome to Bubble</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Sign in to sync your tasks across devices
+        </Text>
 
         <View style={styles.form}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: colors.card,
+              color: colors.text,
+              borderColor: colors.border
+            }]}
             placeholder="Your name"
+            placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={setName}
             autoCapitalize="words"
           />
           
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: colors.card,
+              color: colors.text,
+              borderColor: colors.border
+            }]}
             placeholder="Your email"
+            placeholderTextColor={colors.textSecondary}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -56,7 +74,7 @@ export default function SignInScreen() {
           />
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, { backgroundColor: colors.primary }]}
             onPress={handleEmailSignIn}
             disabled={loading}
           >
@@ -68,17 +86,31 @@ export default function SignInScreen() {
           </TouchableOpacity>
 
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           <TouchableOpacity
-            style={styles.googleButton}
+            style={[styles.googleButton, { 
+              backgroundColor: colors.card,
+              borderColor: colors.border
+            }]}
             onPress={signInWithGoogle}
             disabled={loading}
           >
-            <Text style={styles.googleButtonText}>Sign in with Google</Text>
+            <Text style={[styles.googleButtonText, { color: colors.text }]}>
+              Sign in with Google
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleContinueWithoutSignIn}
+          >
+            <Text style={[styles.skipButtonText, { color: colors.textSecondary }]}>
+              Continue without signing in
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -89,7 +121,6 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f9fc',
   },
   content: {
     flex: 1,
@@ -110,7 +141,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 30,
     textAlign: 'center',
   },
@@ -119,16 +149,13 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   input: {
-    backgroundColor: 'white',
     borderRadius: 8,
     padding: 15,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#6C63FF',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -147,24 +174,28 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
   },
   dividerText: {
     marginHorizontal: 10,
-    color: '#666',
     fontSize: 14,
   },
   googleButton: {
-    backgroundColor: 'white',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
   },
   googleButtonText: {
-    color: '#333',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  skipButton: {
+    marginTop: 20,
+    padding: 12,
+    alignItems: 'center',
+  },
+  skipButtonText: {
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });

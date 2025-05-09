@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define the Task status
 export const TaskStatus = {
@@ -8,13 +9,40 @@ export const TaskStatus = {
   DONE: 'done'
 };
 
+// Local storage key for tasks
+const LOCAL_TASKS_KEY = 'bubble_local_tasks';
+
 // Define the store state
 const useTaskStore = create((set, get) => ({
   tasks: [],
   isLoading: false,
   error: null,
   
-  // Fetch tasks for the logged-in user
+  // Load tasks from local storage
+  loadLocalTasks: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      const localTasks = await AsyncStorage.getItem(LOCAL_TASKS_KEY);
+      set({ 
+        tasks: localTasks ? JSON.parse(localTasks) : [], 
+        isLoading: false 
+      });
+    } catch (error) {
+      console.error('Error loading local tasks:', error);
+      set({ error: error.message, isLoading: false });
+    }
+  },
+  
+  // Save tasks to local storage
+  saveLocalTasks: async (tasks) => {
+    try {
+      await AsyncStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(tasks));
+    } catch (error) {
+      console.error('Error saving local tasks:', error);
+    }
+  },
+  
+  // Fetch tasks based on auth state
   fetchTasks: async () => {
     try {
       set({ isLoading: true, error: null });
@@ -23,9 +51,12 @@ const useTaskStore = create((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session || !session.user) {
-        throw new Error('You must be logged in to fetch tasks');
+        // No authenticated user, load from local storage
+        await get().loadLocalTasks();
+        return;
       }
       
+      // User is authenticated, fetch from Supabase
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
@@ -49,10 +80,30 @@ const useTaskStore = create((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session || !session.user) {
-        throw new Error('You must be logged in to add a task');
+        // No authenticated user, add to local storage
+        const newTask = {
+          id: Date.now().toString(),
+          title: task.title,
+          description: task.description,
+          status: task.status || TaskStatus.TODO,
+          priority: task.priority || 3,
+          importance: task.importance || 3,
+          category: task.category || '',
+          due_date: task.dueDate,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        set(state => {
+          const newTasks = [newTask, ...state.tasks];
+          get().saveLocalTasks(newTasks);
+          return { tasks: newTasks, isLoading: false };
+        });
+        
+        return newTask;
       }
       
-      // Add the task with the user_id from the session
+      // User is authenticated, add to Supabase
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -98,9 +149,23 @@ const useTaskStore = create((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session || !session.user) {
-        throw new Error('You must be logged in to update a task');
+        // No authenticated user, update in local storage
+        set(state => {
+          const newTasks = state.tasks.map(task => 
+            task.id === id ? {
+              ...task,
+              ...updatedTask,
+              updated_at: new Date().toISOString()
+            } : task
+          );
+          get().saveLocalTasks(newTasks);
+          return { tasks: newTasks, isLoading: false };
+        });
+        
+        return get().tasks.find(task => task.id === id);
       }
       
+      // User is authenticated, update in Supabase
       const { data, error } = await supabase
         .from('tasks')
         .update({
@@ -143,9 +208,17 @@ const useTaskStore = create((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session || !session.user) {
-        throw new Error('You must be logged in to delete a task');
+        // No authenticated user, delete from local storage
+        set(state => {
+          const newTasks = state.tasks.filter(task => task.id !== id);
+          get().saveLocalTasks(newTasks);
+          return { tasks: newTasks, isLoading: false };
+        });
+        
+        return true;
       }
       
+      // User is authenticated, delete from Supabase
       const { error } = await supabase
         .from('tasks')
         .delete()

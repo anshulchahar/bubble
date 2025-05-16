@@ -8,13 +8,14 @@ import {
   ScrollView,
   Platform,
   Alert, // Use Alert for validation messages
+  Image
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext'; // Import useTheme
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Slider from '@react-native-community/slider'; // Import Slider component
 import { Ionicons } from '@expo/vector-icons'; // For icons
 
-const TaskForm = ({ task, onSave, onCancel }) => {
+const TaskForm = ({ task, onSave, onCancel, onMenuPress }) => {
   const { colors } = useTheme(); // Use theme colors
   const styles = getStyles(colors); // Get dynamic styles
 
@@ -121,8 +122,7 @@ const TaskForm = ({ task, onSave, onCancel }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Back Button */}
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>      {/* Back Button and Logo/Menu */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -133,8 +133,19 @@ const TaskForm = ({ task, onSave, onCancel }) => {
         
         {/* Title aligned with back button */}
         <Text style={styles.formTitle}>
-          {task ? 'Edit Task' : ''}
+          {task ? 'Edit Task' : 'New Task'}
         </Text>
+        
+        {/* Logo that toggles sidebar */}
+        {onMenuPress && (
+          <TouchableOpacity onPress={onMenuPress}>
+            <Image 
+              source={require('../../assets/logo.png')} 
+              style={styles.logo} 
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Title Input */}
@@ -260,10 +271,10 @@ const getStyles = (colors) => StyleSheet.create({
     padding: 20,
     paddingBottom: 40, // Ensure space for buttons
     paddingLeft: 12, // Reduced left padding
-  },
-  header: {
+  },  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 24,
     paddingTop: 8,
   },
@@ -277,6 +288,10 @@ const getStyles = (colors) => StyleSheet.create({
     color: colors.text,
     marginLeft: 16,
     flex: 1,
+  },
+  logo: {
+    height: 30,
+    width: 85,
   },
   formGroup: {
     marginBottom: 20, // Consistent spacing

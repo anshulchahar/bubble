@@ -1,30 +1,39 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
 import useTaskStore from '../lib/store';
 import { useTheme } from '../context/ThemeContext'; // Import useTheme
 import { Ionicons } from '@expo/vector-icons'; // For icons
+import Sidebar from '../components/Sidebar';
 
 const TaskDetailScreen = ({ route, navigation }) => {
   const { taskId } = route.params;
   const { tasks, updateTask, deleteTask, setTaskStatus } = useTaskStore();
   const { colors } = useTheme(); // Use theme colors
+  const [sidebarVisible, setSidebarVisible] = useState(false);
 
   // Find the task by ID
   const task = tasks.find(t => t.id === taskId);
 
   // Dynamic styles based on theme
   const styles = getStyles(colors);
-
   // Handle if task not found
   if (!task) {
     return (
       <SafeAreaView style={styles.container}>
+        <Sidebar 
+          isVisible={sidebarVisible} 
+          onClose={() => setSidebarVisible(false)} 
+          navigation={navigation} 
+        />
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setSidebarVisible(true)}>
+            <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
           </TouchableOpacity>
         </View>
         <View style={styles.centeredContent}>
@@ -77,17 +86,26 @@ const TaskDetailScreen = ({ route, navigation }) => {
     deleteTask(task.id);
     navigation.goBack();
   };
-
   return (
     <SafeAreaView style={styles.container}>
+      {/* Sidebar Component */}
+      <Sidebar 
+        isVisible={sidebarVisible} 
+        onClose={() => setSidebarVisible(false)}
+        navigation={navigation}
+      />
+      
       <ScrollView style={styles.scrollView}>
-        {/* Header with Back Button */}
+        {/* Header with Back Button and Logo */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setSidebarVisible(true)}>
+            <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
           </TouchableOpacity>
         </View>
 
@@ -205,14 +223,18 @@ const getStyles = (colors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
-  },
-  header: {
+  },  header: {
     paddingHorizontal: 16,
     paddingTop: 16, // Reduce top padding inside safe area
     paddingBottom: 8,
     backgroundColor: colors.background, // Match background
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  logo: {
+    height: 35,
+    width: 120,
   },
   backButton: {
     flexDirection: 'row',

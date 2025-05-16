@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import Sidebar from '../components/Sidebar';
 
 export default function SignInScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const { signInWithEmail, signInWithGoogle, loading } = useAuth();
   const { colors } = useTheme();
 
@@ -27,18 +29,26 @@ export default function SignInScreen({ navigation }) {
   const handleContinueWithoutSignIn = () => {
     navigation.navigate('Home');
   };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      {/* Sidebar Component */}
+      <Sidebar 
+        isVisible={sidebarVisible} 
+        onClose={() => setSidebarVisible(false)}
+        navigation={navigation}
+      />
+      
       <View style={styles.content}>
-        <Image 
-          source={require('../../assets/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <TouchableOpacity onPress={() => setSidebarVisible(true)}>
+          <Image 
+            source={require('../../assets/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
         
         <Text style={[styles.title, { color: colors.text }]}>Welcome to Bubble</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>

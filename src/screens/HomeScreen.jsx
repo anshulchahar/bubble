@@ -1,21 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert, ActivityIndicator } from 'react-native';
 import BubbleCanvas from '../components/BubbleCanvas';
+import Sidebar from '../components/Sidebar';
 import useTaskStore from '../lib/store';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, route }) => {
   const { tasks, setTaskStatus, fetchTasks, isLoading } = useTaskStore();
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(route?.params?.initialFilter || 'all');
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const { colors, isDark, setScheme } = useTheme();
   const { user, signOut } = useAuth();
-
   // Fetch tasks when the component mounts
   useEffect(() => {
     fetchTasks();
   }, []);
+  
+  // Update filter if provided in navigation params
+  useEffect(() => {
+    if (route?.params?.initialFilter) {
+      setFilter(route.params.initialFilter);
+      // Clear the param after using it
+      navigation.setParams({ initialFilter: undefined });
+    }
+  }, [route?.params?.initialFilter]);
 
   // Handle bubble press to view task details
   const handleBubblePress = (task) => {
@@ -75,11 +85,19 @@ const HomeScreen = ({ navigation }) => {
     if (filter === 'high-priority') return task.priority >= 4;
     return true;
   });
-
   return (
     <SafeAreaView style={styles.container}>
+      {/* Sidebar Component */}
+      <Sidebar 
+        isVisible={sidebarVisible} 
+        onClose={() => setSidebarVisible(false)}
+        navigation={navigation}
+      />
+      
       <View style={styles.header}>
-        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <TouchableOpacity onPress={() => setSidebarVisible(true)}>
+          <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        </TouchableOpacity>
         <View style={styles.headerIcons}>
           {user ? (
             // User is authenticated - show user info and sign out option
@@ -199,11 +217,10 @@ const getStyles = (colors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  logo: {
+  },  logo: {
     height: 35,
     width: 120,
-    marginLeft: -25, // Add negative margin to pull logo closer to edge
+    marginLeft: -5, // Reduced negative margin to make logo more clickable
   },
   headerIcons: {
     flexDirection: 'row',

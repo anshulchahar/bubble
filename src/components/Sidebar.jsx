@@ -208,7 +208,7 @@ const Sidebar = ({ isVisible, onClose, navigation }) => {
             style={styles.menuItem}
             onPress={() => {
               onClose();
-              setTimeout(() => alert('Privacy Policy (placeholder)'), 300);
+              setTimeout(() => navigation.navigate('PrivacyPolicy'), 300);
             }}
           >
             <Ionicons name="document-text" size={22} color={colors.text} />

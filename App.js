@@ -62,6 +62,7 @@ function ThemedApp() {
         <Stack.Screen name="ContactUs" component={require('./src/screens/ContactUsScreen').default} />
         <Stack.Screen name="ReportIssue" component={require('./src/screens/ReportIssueScreen').default} />
         <Stack.Screen name="FAQ" component={require('./src/screens/FAQScreen').default} />
+        <Stack.Screen name="PrivacyPolicy" component={require('./src/screens/PrivacyPolicyScreen').default} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -218,7 +218,7 @@ const Sidebar = ({ isVisible, onClose, navigation }) => {
             style={styles.menuItem}
             onPress={() => {
               onClose();
-              setTimeout(() => alert('FAQ (placeholder)'), 300);
+              setTimeout(() => navigation.navigate('FAQ'), 300);
             }}
           >
             <Ionicons name="help-circle" size={22} color={colors.text} />

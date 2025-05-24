@@ -176,31 +176,34 @@ const Sidebar = ({ isVisible, onClose, navigation }) => {
           
           <View style={styles.divider} />
 
-          {/* Account section */}
-          <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => {
-              onClose();
-              setTimeout(() => navigation.navigate('Statistics'), 300);
-            }}
-          >
-            <Ionicons name="stats-chart" size={22} color={colors.text} />
-            <Text style={styles.menuText}>Statistics</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => {
-              onClose();
-              // Placeholder: implement clear history logic
-              setTimeout(() => alert('History cleared!'), 300);
-            }}
-          >
-            <Ionicons name="trash-bin" size={22} color={colors.text} />
-            <Text style={styles.menuText}>Clear History</Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
+          {/* Account section (only if user is logged in) */}
+          {user && (
+            <>
+              <Text style={styles.sectionTitle}>Account</Text>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  onClose();
+                  setTimeout(() => navigation.navigate('Statistics'), 300);
+                }}
+              >
+                <Ionicons name="stats-chart" size={22} color={colors.text} />
+                <Text style={styles.menuText}>Statistics</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  onClose();
+                  // Placeholder: implement clear history logic
+                  setTimeout(() => alert('History cleared!'), 300);
+                }}
+              >
+                <Ionicons name="trash-bin" size={22} color={colors.text} />
+                <Text style={styles.menuText}>Clear History</Text>
+              </TouchableOpacity>
+              <View style={styles.divider} />
+            </>
+          )}
 
           {/* About section */}
           <Text style={styles.sectionTitle}>About</Text>

@@ -59,6 +59,8 @@ function ThemedApp() {
         <Stack.Screen name="TaskForm" component={TaskFormScreen} />
         <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
         <Stack.Screen name="SignIn" component={SignInScreen} />
+        <Stack.Screen name="ContactUs" component={require('./src/screens/ContactUsScreen').default} />
+        <Stack.Screen name="ReportIssue" component={require('./src/screens/ReportIssueScreen').default} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -175,6 +175,75 @@ const Sidebar = ({ isVisible, onClose, navigation }) => {
           </TouchableOpacity>
           
           <View style={styles.divider} />
+
+          {/* Account section */}
+          <Text style={styles.sectionTitle}>Account</Text>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              setTimeout(() => navigation.navigate('Statistics'), 300);
+            }}
+          >
+            <Ionicons name="stats-chart" size={22} color={colors.text} />
+            <Text style={styles.menuText}>Statistics</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              // Placeholder: implement clear history logic
+              setTimeout(() => alert('History cleared!'), 300);
+            }}
+          >
+            <Ionicons name="trash-bin" size={22} color={colors.text} />
+            <Text style={styles.menuText}>Clear History</Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* About section */}
+          <Text style={styles.sectionTitle}>About</Text>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              setTimeout(() => alert('Privacy Policy (placeholder)'), 300);
+            }}
+          >
+            <Ionicons name="document-text" size={22} color={colors.text} />
+            <Text style={styles.menuText}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              setTimeout(() => alert('FAQ (placeholder)'), 300);
+            }}
+          >
+            <Ionicons name="help-circle" size={22} color={colors.text} />
+            <Text style={styles.menuText}>FAQ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              setTimeout(() => navigation.navigate('ContactUs'), 300);
+            }}
+          >
+            <Ionicons name="mail" size={22} color={colors.text} />
+            <Text style={styles.menuText}>Contact Us</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              setTimeout(() => navigation.navigate('ReportIssue'), 300);
+            }}
+          >
+            <Ionicons name="bug" size={22} color={colors.text} />
+            <Text style={styles.menuText}>Report Issue</Text>
+          </TouchableOpacity>
         </ScrollView>
         
         {/* Footer with settings & logout */}
